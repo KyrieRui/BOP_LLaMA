@@ -1,5 +1,7 @@
 import gradio as gr
 from images import logo_svg
+from gradio_pdf import PDF
+
 
 # Gradio application setup
 def create_blocks():
@@ -23,17 +25,20 @@ def create_blocks():
                     gr.HTML(f"<div class='logo'/><img src={logo_svg} alt=PrivateGPT></div")
        
         with gr.Column():
-            with gr.Row():
+            
+            
+
+            with gr.Row():            
+            
                 chat_history = gr.Chatbot(
                     label="BOP GPT",
                     value=[], 
                     height=480
                 )
 
-                show_img = gr.Image(
-                    label='Overview', 
-                    height=480
-                )
+                pdf = PDF(label="Upload a PDF", interactive=True)
+                
+                pdf.upload(lambda f: f, pdf)
 
         with gr.Row():
             with gr.Column(scale=6):
@@ -45,12 +50,11 @@ def create_blocks():
             with gr.Column(scale=6):
                 submit_button = gr.Button('Send')
 
-            with gr.Column(scale=6):
-                uploaded_pdf = gr.UploadButton("📁 Upload PDF", file_types=[".pdf"])
             
-        return blocks, chat_history, show_img, text_input, submit_button, uploaded_pdf
+            
+        return blocks, chat_history, text_input, submit_button, 
 
 if __name__ == '__main__':
-    demo, chatbot, show_img, text_input, submit_button, uploaded_pdf = create_blocks()
+    demo, chatbot, text_input, submit_button = create_blocks()
     demo.queue()
     demo.launch()
