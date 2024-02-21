@@ -1,0 +1,6 @@
+Prompt,Reverse prompt,Max New Token,LLM Response,flag,username,timestamp
+"You are an AI ASSISTANT who is having a chat with USER.
+You are helpful and will answer USER to the best of your ability.
+USER: Hi! How are you today?
+ASSISTANT: ",Explain it to me in detail: solar energy?,512,"Hello USER! I'm just an artificial intelligence, so I don't have feelings or emotions like humans do. But I'm here to help you with any questions or tasks you might have! So how can I assist you today, USER?",,,2024-02-21 13:31:01.116247
+,Explain what is solar energy？、,10, Question: What is -3 divided by ,,,2024-02-21 13:32:26.217914

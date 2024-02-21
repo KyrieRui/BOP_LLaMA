@@ -72,7 +72,7 @@ def load_embeddings(self):
             model_kwargs={'device': 'mps'}, 
             encode_kwargs={'device': 'mps'}
         )
-print("Embeddings loaded successfully!")
+
 
 #Loading the model
 def load_model(self):
@@ -89,7 +89,7 @@ def load_model(self):
     )
 
     return self.model == llm
-print("Model loaded successfully!")
+
 
 def load_vectordb(self):
     """
@@ -162,24 +162,23 @@ def render_file(self, file):
     image = Image.frombytes('RGB', [pix.width, pix.height], pix.samples)
     return image
 
-def bot(self, query):
-    answer = self.chain({"query": query})
-    llm_response = answer['response']
-    return llm_response
+def generate_response(self, history, query, file):
+    """
+    Generate a response based on the user's query.
 
-with gr.Blocks(title='Code Llama Demo') as demo:
-    # gr.HTML("Code Llama Demo")
-    gr.Markdown("# Code Llama Demo")
-    chatbot = gr.Chatbot([], elem_id="chatbot", height=700)
-    msg = gr.Textbox()
-    clear = gr.ClearButton([msg, chatbot])
+    Parameters:
+        history (list): List of chat history tuples.
+        query (str): The user's query.
+        file (FileStorage): The uploaded PDF file.
 
-    def respond(self, message, chat_history):
-        bot_message = bot(self, message)
-        chat_history.append((message, bot_message))
-        time.sleep(2)
-        return "", chat_history
-
-    msg.submit(respond, [msg, chatbot], [msg, chatbot])
-
-demo.launch()
+    Returns:
+        str: The AI-generated response.
+    """
+    if not query:
+        raise gr.Error('Enter a query')
+    if not file:
+        raise gr.Error('Upload a file')
+    self.chat_history = add_text(history, query)
+    self.process_file(file)
+    response = self.chain_pipeline().generate_response(self.chat_history)
+    return response

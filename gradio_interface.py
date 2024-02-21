@@ -36,16 +36,16 @@ def create_blocks():
                 )
 
         with gr.Row():
-            with gr.Column(scale=0.60):
+            with gr.Column(scale=6):
                 text_input = gr.Textbox(
                     show_label=False,
                     placeholder="Type here to ask your PDF",
                 container=False)
 
-            with gr.Column(scale=0.20):
+            with gr.Column(scale=6):
                 submit_button = gr.Button('Send')
 
-            with gr.Column(scale=0.20):
+            with gr.Column(scale=6):
                 uploaded_pdf = gr.UploadButton("📁 Upload PDF", file_types=[".pdf"])
             
         return blocks, chat_history, show_img, text_input, submit_button, uploaded_pdf
