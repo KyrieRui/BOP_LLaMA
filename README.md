@@ -1,24 +1,13 @@
-```
-./server -m ./models/llama-2-7b-chat.Q4_K_M.gguf
-
-./main -m ./models/llama-2-7b-chat.Q4_K_M.gguf -n 256 --repeat_penalty 1.0 --color -i -r "User:" -f prompts/chat-with-bob.txt
-
-./main -m models/llama-2-7b-chat.Q4_K_M.gguf -p "what is GPT" -n 400 -e
+### The BOP LLaMA is using locally running LLaMA2 7B Chat model,it using llama-cpp-python library and Graio for UI
 
 ```
-
-```
-conda activate llm
-
-python mian.py
-
-python main_excel.py
-
-python main_bus.py
-```
-
 conda create -n llm python=3.11
+
 conda activate llm
+python BOP_LLM_GradioUI.py
+```
+
+![01 Image](01.png)
 
 #### if Mac GPU (M1...) not using, try the following
 

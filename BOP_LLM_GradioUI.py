@@ -2,6 +2,7 @@ import gradio as gr
 import random
 import time
 from llama_cpp import Llama
+from images import logo_svg
 
 n_gpu_layers = 1  # Metal set to 1 is enough.
 n_batch = 512  # Should be between 1 and n_ctx, consider the amount of RAM of your Apple Silicon Chip.
@@ -25,19 +26,18 @@ llm.create_chat_completion(
     ]
 )
 
-with gr.Blocks() as demo:
-    chatbot = gr.Chatbot()
-    msg = gr.Textbox()
-    clear = gr.ClearButton([msg, chatbot])
+def respond(message, history):
+    result = llm(message, max_tokens=-1)
+    bot_message = result['choices'][0]['text']
+    return bot_message
 
-    def respond(message, chat_history):
-        result = llm(message, max_tokens=-1)
-        bot_message = result['choices'][0]['text']
-        chat_history.append((message, bot_message))
-        time.sleep(2)
-        return "", chat_history
+demo = gr.ChatInterface(
+    fn=respond,
+    chatbot=gr.Chatbot(
+        label="BOP GPT",
+        value=[], 
+        height=480
+    ),
+)
 
-    msg.submit(respond, [msg, chatbot], [msg, chatbot])
-
-if __name__ == "__main__":
-    demo.launch()
+demo.launch()
