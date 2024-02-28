@@ -4,6 +4,17 @@ import time
 from llama_cpp import Llama
 from images import logo_svg
 
+from torch import cuda
+from langchain.embeddings.huggingface import HuggingFaceEmbeddings
+
+embed_model_id = 'sentence-transformers/all-MiniLM-L6-v2'
+
+embed_model = HuggingFaceEmbeddings(
+                model_name=embed_model_id,
+                model_kwargs={'device': 'mps'}, 
+                encode_kwargs={'device': 'mps'}
+)
+
 n_gpu_layers = 1  # Metal set to 1 is enough.
 n_batch = 512  # Should be between 1 and n_ctx, consider the amount of RAM of your Apple Silicon Chip.
 model_path="/Users/zwang/Desktop/pgpt/privateGPT/models/cache/models--TheBloke--Mistral-7B-Instruct-v0.2-GGUF/blobs/3e0039fd0273fcbebb49228943b17831aadd55cbcbf56f0af00499be2040ccf9"
@@ -26,6 +37,18 @@ llm.create_chat_completion(
     ]
 )
 
+from langchain_community.document_loaders import PyPDFLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.embeddings import LlamaCppEmbeddings
+from langchain.vectorstores import Chroma
+
+loader = PyPDFLoader('./RAG_files/test_pdf.pdf')
+data = loader.load()
+
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=0)
+all_splits = text_splitter.split_documents(data)
+
+vectorstore = Chroma.from_documents(documents=all_splits, embedding=embed_model)
 
 def respond(message, history):
     result = llm(message, max_tokens=-1)
