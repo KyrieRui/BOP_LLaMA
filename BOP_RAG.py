@@ -8,6 +8,11 @@ from torch import cuda
 from langchain.embeddings.huggingface import HuggingFaceEmbeddings
 from langchain.callbacks.manager import CallbackManager
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.document_loaders.csv_loader import CSVLoader
+from langchain_community.vectorstores import Chroma
+from langchain.chains import RetrievalQA
+from langchain.prompts import PromptTemplate
 
 n_gpu_layers = 1  # Metal set to 1 is enough.
 n_batch = 512  # Should be between 1 and n_ctx, consider the amount of RAM of your Apple Silicon Chip.
@@ -32,37 +37,39 @@ embed_model = HuggingFaceEmbeddings(
                 encode_kwargs={'device': 'mps'}
             )
 
-from langchain.document_loaders.csv_loader import CSVLoader
-from langchain_community.vectorstores import Chroma
-loader = CSVLoader(file_path="./RAG_files/test_demo.csv")
-data = loader.load()
+def create_vectorstore(file_path):
+    loader = CSVLoader(file_path)
+    data = loader.load()
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=0)
+    all_splits = text_splitter.split_documents(data)
+    vectorstore = Chroma.from_documents(documents=all_splits, embedding=embed_model)
+    return vectorstore
 
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=0)
-all_splits = text_splitter.split_documents(data)
-vectorstore = Chroma.from_documents(documents=all_splits, embedding=embed_model)
 
-from langchain.chains import RetrievalQA
-from langchain.prompts import PromptTemplate
 
-prompt_template = """Use the following pieces of context to answer the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer.
+def create_chain(vectorstore, llm):
+    prompt_template = """Use the following pieces of context to answer the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer.
 
-{context}
+    {context}
 
-Question: {question}
-Helpful Answer:"""
-PROMPT = PromptTemplate(
-    template=prompt_template, input_variables=["context", "question"]
-)
+    Question: {question}
+    Helpful Answer:"""
+    PROMPT = PromptTemplate(
+        template=prompt_template, input_variables=["context", "question"]
+    )
 
-qa_chain = RetrievalQA.from_chain_type(
-    llm,
-    retriever=vectorstore.as_retriever(),
-    chain_type_kwargs={"prompt": PROMPT},
-)
+    qa_chain = RetrievalQA.from_chain_type(
+        llm,
+        retriever=vectorstore.as_retriever(),
+        chain_type_kwargs={"prompt": PROMPT},
+    )
+    return qa_chain
 
+file = "./RAG_files/test_demo.csv"
 
 def respond(message, history):
+    vectorstore = create_vectorstore(file)
+    qa_chain = create_chain(vectorstore, llm)
     bot_message = qa_chain(message)['result']
     return bot_message
 
