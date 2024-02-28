@@ -1,20 +1,27 @@
 import gradio as gr
 import random
 import time
-from llama_cpp import Llama
+from langchain_community.llms import LlamaCpp
 from images import logo_svg
 
 from torch import cuda
 from langchain.embeddings.huggingface import HuggingFaceEmbeddings
+from langchain.callbacks.manager import CallbackManager
+from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 
 n_gpu_layers = 1  # Metal set to 1 is enough.
 n_batch = 512  # Should be between 1 and n_ctx, consider the amount of RAM of your Apple Silicon Chip.
 model_path="/Users/zwang/Desktop/pgpt/privateGPT/models/cache/models--TheBloke--Mistral-7B-Instruct-v0.2-GGUF/blobs/3e0039fd0273fcbebb49228943b17831aadd55cbcbf56f0af00499be2040ccf9"
-llm = Llama(
+callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
+
+llm = LlamaCpp(
     model_path=model_path,
-    chat_format="llama-2",
     n_gpu_layers=n_gpu_layers,
     n_batch=n_batch,
+    n_ctx=2048,
+    f16_kv=True,  # MUST set to True, otherwise you will run into problem after a couple of calls
+    callback_manager=callback_manager,
+    verbose=True,
     use_mlock = True
 )
 
@@ -23,10 +30,10 @@ embed_model = HuggingFaceEmbeddings(
                 model_name=embed_model_id,
                 model_kwargs={'device': 'mps'}, 
                 encode_kwargs={'device': 'mps'}
-)
+            )
 
 from langchain.document_loaders.csv_loader import CSVLoader
-from langchain.vectorstores import Chroma
+from langchain_community.vectorstores import Chroma
 loader = CSVLoader(file_path="./RAG_files/test_demo.csv")
 data = loader.load()
 
