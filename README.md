@@ -15,3 +15,9 @@ python BOP_LLM_GradioUI.py
 pip uninstall llama-cpp-python
 CMAKE_ARGS="-DLLAMA_METAL=on" pip install llama-cpp-python==0.2.27
 ```
+
+### The BOP_RAG using llama cpp provieded by langchain_community
+
+##### This is the test demo csv in RAG file
+
+![rag01](rag01.png)
