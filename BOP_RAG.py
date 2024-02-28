@@ -7,18 +7,9 @@ from images import logo_svg
 from torch import cuda
 from langchain.embeddings.huggingface import HuggingFaceEmbeddings
 
-embed_model_id = 'sentence-transformers/all-MiniLM-L6-v2'
-
-embed_model = HuggingFaceEmbeddings(
-                model_name=embed_model_id,
-                model_kwargs={'device': 'mps'}, 
-                encode_kwargs={'device': 'mps'}
-)
-
 n_gpu_layers = 1  # Metal set to 1 is enough.
 n_batch = 512  # Should be between 1 and n_ctx, consider the amount of RAM of your Apple Silicon Chip.
 model_path="/Users/zwang/Desktop/pgpt/privateGPT/models/cache/models--TheBloke--Mistral-7B-Instruct-v0.2-GGUF/blobs/3e0039fd0273fcbebb49228943b17831aadd55cbcbf56f0af00499be2040ccf9"
-
 llm = Llama(
     model_path=model_path,
     chat_format="llama-2",
@@ -27,32 +18,45 @@ llm = Llama(
     use_mlock = True
 )
 
-llm.create_chat_completion(
-    messages = [
-        {"role": "system", "content": "You are an assistant who perfectly Answer the question. You don't lie, Not make up facts at all. When faced with a question that you don't know how the answer, you will break it down into multiple parts and answer the part you have answer separately. When faced with a question that is completely unanswerable you will say, I'm sorry I don't know."},
-        {
-            "role": "user",
-            "content": "Describe climate change in New Zealand in 2024."
-        }
-    ]
+embed_model_id = 'sentence-transformers/all-MiniLM-L6-v2'
+embed_model = HuggingFaceEmbeddings(
+                model_name=embed_model_id,
+                model_kwargs={'device': 'mps'}, 
+                encode_kwargs={'device': 'mps'}
 )
 
-from langchain_community.document_loaders import PyPDFLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings import LlamaCppEmbeddings
+from langchain.document_loaders.csv_loader import CSVLoader
 from langchain.vectorstores import Chroma
-
-loader = PyPDFLoader('./RAG_files/test_pdf.pdf')
+loader = CSVLoader(file_path="./RAG_files/test_demo.csv")
 data = loader.load()
 
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=0)
 all_splits = text_splitter.split_documents(data)
-
 vectorstore = Chroma.from_documents(documents=all_splits, embedding=embed_model)
 
+from langchain.chains import RetrievalQA
+from langchain.prompts import PromptTemplate
+
+prompt_template = """Use the following pieces of context to answer the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer.
+
+{context}
+
+Question: {question}
+Helpful Answer:"""
+PROMPT = PromptTemplate(
+    template=prompt_template, input_variables=["context", "question"]
+)
+
+qa_chain = RetrievalQA.from_chain_type(
+    llm,
+    retriever=vectorstore.as_retriever(),
+    chain_type_kwargs={"prompt": PROMPT},
+)
+
+
 def respond(message, history):
-    result = llm(message, max_tokens=-1)
-    bot_message = result['choices'][0]['text']
+    bot_message = qa_chain(message)['result']
     return bot_message
 
 demo = gr.ChatInterface(
